@@ -1,85 +1,58 @@
-struct Library {
-    books: Vec<Book>,
+pub struct User {
+    name: String,
+    age: u32,
+    weight: f32,
 }
 
-struct Book {
-    title: String,
-    year: u16,
-}
-
-impl Book {
-    // This is a constructor, used below.
-    fn new(title: &str, year: u16) -> Book {
-        Book {
-            title: String::from(title),
-            year,
-        }
-    }
-}
-
-// Implement the methods below. Update the `self` parameter to
-// indicate the method's required level of ownership over the object:
-//
-// - `&self` for shared read-only access,
-// - `&mut self` for unique and mutable access,
-// - `self` for unique access by value.
-impl Library {
-    fn new() -> Library {
-        Library { books: vec![] }
+impl User {
+    pub fn new(name: String, age: u32, weight: f32) -> Self {
+        User { name, age, weight }
     }
 
-    fn len(&self) -> usize {
-        self.books.len()
+    pub fn name(&self) -> &str {
+        self.name.as_str()
     }
 
-    fn is_empty(&self) -> bool {
-        self.books.is_empty()
+    pub fn age(&self) -> u32 {
+        self.age
     }
 
-    fn add_book(&mut self, book: Book) {
-        self.books.push(book)
+    pub fn weight(&self) -> f32 {
+        self.weight
     }
 
-    fn print_books(&self) {
-        for ele in &self.books {
-            println!("{}: {}", ele.title, ele.year)
-        }
+    pub fn set_age(&mut self, new_age: u32) {
+        self.age = new_age;
     }
 
-    fn oldest_book(&self) -> Option<&Book> {
-        self.books
-            .iter()
-            .min_by(move |ba, bb| ba.year.cmp(&bb.year))
+    pub fn set_weight(&mut self, new_weight: f32) {
+        self.weight = new_weight;
     }
 }
 
-// This shows the desired behavior. Uncomment the code below and
-// implement the missing methods. You will need to update the
-// method signatures, including the "self" parameter! You may
-// also need to update the variable bindings within main.
 fn main() {
-    let mut library = Library::new();
+    let bob = User::new(String::from("Bob"), 32, 155.2);
+    println!("I'm {} and my age is {}", bob.name(), bob.age());
+}
 
-    println!(
-        "The library is empty: library.is_empty() -> {}",
-        library.is_empty()
-    );
+#[test]
+fn test_weight() {
+    let bob = User::new(String::from("Bob"), 32, 155.2);
+    assert_eq!(bob.weight(), 155.2);
+}
 
-    library.add_book(Book::new("Lord of the Rings", 1954));
-    library.add_book(Book::new("Alice's Adventures in Wonderland", 1865));
+#[test]
+fn test_set_age() {
+    let mut bob = User::new(String::from("Bob"), 32, 155.2);
+    assert_eq!(bob.age(), 32);
+    bob.set_age(33);
+    assert_eq!(bob.age(), 33);
+}
 
-    println!(
-        "The library is no longer empty: library.is_empty() -> {}",
-        library.is_empty()
-    );
-
-    library.print_books();
-
-    match library.oldest_book() {
-        Some(book) => println!("The oldest book is {}", book.title),
-        None => println!("The library is empty!"),
-    }
-
-    println!("The library has {} books", library.len());
-    library.print_books();
+#[test]
+fn test_set_weight() {
+    let mut bob = User::new(String::from("Bob"), 32, 155.2);
+    assert_eq!(bob.weight, 155.2);
+    bob.set_weight(100.0);
+    assert_eq!(bob.weight(), 100.0);
 }
