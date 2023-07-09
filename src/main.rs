@@ -1,35 +1,85 @@
-fn transpose(matrix: [[i32; 3]; 3]) -> [[i32; 3]; 3] {
-    let mut res = [[0, 0, 0], [0, 0, 0], [0, 0, 0]];
-    for i in 0..3 {
-        for j in 0..3 {
-            res[i][j] = matrix[j][i];
-        }
-    }
-    return res;
+struct Library {
+    books: Vec<Book>,
 }
 
-fn pretty_print(matrix: &[[i32; 3]; 3]) {
-    for r in matrix {
-        print!("[");
-        for v in r {
-            print!(" {}", v);
-        }
+struct Book {
+    title: String,
+    year: u16,
+}
 
-        println!("]");
+impl Book {
+    // This is a constructor, used below.
+    fn new(title: &str, year: u16) -> Book {
+        Book {
+            title: String::from(title),
+            year,
+        }
     }
 }
 
+// Implement the methods below. Update the `self` parameter to
+// indicate the method's required level of ownership over the object:
+//
+// - `&self` for shared read-only access,
+// - `&mut self` for unique and mutable access,
+// - `self` for unique access by value.
+impl Library {
+    fn new() -> Library {
+        Library { books: vec![] }
+    }
+
+    fn len(&self) -> usize {
+        self.books.len()
+    }
+
+    fn is_empty(&self) -> bool {
+        self.books.is_empty()
+    }
+
+    fn add_book(&mut self, book: Book) {
+        self.books.push(book)
+    }
+
+    fn print_books(&self) {
+        for ele in &self.books {
+            println!("{}: {}", ele.title, ele.year)
+        }
+    }
+
+    fn oldest_book(&self) -> Option<&Book> {
+        self.books
+            .iter()
+            .min_by(move |ba, bb| ba.year.cmp(&bb.year))
+    }
+}
+
+// This shows the desired behavior. Uncomment the code below and
+// implement the missing methods. You will need to update the
+// method signatures, including the "self" parameter! You may
+// also need to update the variable bindings within main.
 fn main() {
-    let matrix = [
-        [101, 102, 103], // <-- the comment makes rustfmt add a newline
-        [201, 202, 203],
-        [301, 302, 303],
-    ];
+    let mut library = Library::new();
 
-    println!("matrix:");
-    pretty_print(&matrix);
+    println!(
+        "The library is empty: library.is_empty() -> {}",
+        library.is_empty()
+    );
 
-    let transposed = transpose(matrix);
-    println!("transposed:");
-    pretty_print(&transposed);
+    library.add_book(Book::new("Lord of the Rings", 1954));
+    library.add_book(Book::new("Alice's Adventures in Wonderland", 1865));
+
+    println!(
+        "The library is no longer empty: library.is_empty() -> {}",
+        library.is_empty()
+    );
+
+    library.print_books();
+
+    match library.oldest_book() {
+        Some(book) => println!("The oldest book is {}", book.title),
+        None => println!("The library is empty!"),
+    }
+
+    println!("The library has {} books", library.len());
+    library.print_books();
 }
