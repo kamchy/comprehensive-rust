@@ -1,177 +1,66 @@
-use core::slice::Iter;
-use std::f64::consts::PI;
-use std::ops::Add;
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Point {
-    x: i32,
-    y: i32,
-}
+// TODO: remove this when you're done with your implementation.
+#![allow(unused_variables, dead_code)]
 
-impl Point {
-    fn new(x: i32, y: i32) -> Self {
-        Point { x, y }
-    }
+fn digits(idx: usize, c: char) -> Vec<i32> {
+    let dig: i32 = c.to_digit(10).unwrap_or(0).try_into().unwrap_or(0); // no error checking
 
-    fn magnitude(self) -> f64 {
-        (self.x.pow(2) as f64 + self.y.pow(2) as f64).sqrt()
-    }
-
-    fn dist(&self, other: Point) -> f64 {
-        (((self.x - other.x) as f64).powi(2) + ((self.y - other.y) as f64).powi(2)).sqrt()
+    if idx % 2 != 0 {
+        let r = dig * 2 % 10;
+        let l = (dig * 2 - r) / 10;
+        vec![l, r]
+    } else {
+        vec![dig]
     }
 }
-
-impl Add for Point {
-    type Output = Point;
-    fn add(self, other: Point) -> Self {
-        Point {
-            x: self.x + other.x,
-            y: self.y + other.y,
-        }
+pub fn luhn(cc_number: &str) -> bool {
+    let ccn = cc_number.replace(" ", "");
+    if ccn.len() < 2 || !ccn.chars().all(|c| c.is_numeric()) {
+        return false;
     }
+    ccn.chars()
+        .rev()
+        .enumerate()
+        .flat_map(|(idx, c)| digits(idx, c))
+        .sum::<i32>()
+        % 10
+        == 0
 }
 
-pub struct Polygon {
-    points: Vec<Point>,
+#[test]
+fn test_non_digit_cc_number() {
+    assert!(!luhn("foo"));
 }
 
-impl Polygon {
-    fn new() -> Self {
-        Polygon { points: Vec::new() }
-    }
-
-    fn add_point(&mut self, p: Point) {
-        self.points.push(p)
-    }
-
-    fn perimeter(&self) -> f64 {
-        let mut sum: f64 = 0.0;
-        let len = self.points.len();
-        for i in 0..len - 1 {
-            sum += self.points[i].dist(self.points[i + 1])
-        }
-        sum + self.points[len - 1].dist(self.points[0])
-    }
-
-    fn left_most_point(&self) -> Option<Point> {
-        self.points.iter().min_by(|p, q| p.x.cmp(&q.x)).copied()
-    }
-
-    fn iter(&self) -> Iter<Point> {
-        self.points.iter()
-    }
+#[test]
+fn test_empty_cc_number() {
+    assert!(!luhn(""));
+    assert!(!luhn(" "));
+    assert!(!luhn("  "));
+    assert!(!luhn("    "));
 }
 
-pub struct Circle {
-    pos: Point,
-    radius: i32, // add fields
+#[test]
+fn test_single_digit_cc_number() {
+    assert!(!luhn("0"));
 }
 
-impl Circle {
-    fn new(p: Point, r: i32) -> Self {
-        Circle { radius: r, pos: p }
-    }
-
-    fn perimeter(&self) -> f64 {
-        2.0 * PI * self.radius as f64
-    }
+#[test]
+fn test_two_digit_cc_number() {
+    assert!(luhn(" 0 0 "));
 }
 
-pub enum Shape {
-    Polygon(Polygon),
-    Circle(Circle),
+#[test]
+fn test_valid_cc_number() {
+    assert!(luhn("4263 9826 4026 9299"));
+    assert!(luhn("4539 3195 0343 6467"));
+    assert!(luhn("7992 7398 713"));
 }
 
-impl From<Circle> for Shape {
-    fn from(c: Circle) -> Shape {
-        Shape::Circle(c)
-    }
-}
-
-impl From<Polygon> for Shape {
-    fn from(c: Polygon) -> Shape {
-        Shape::Polygon(c)
-    }
-}
-
-impl Shape {
-    fn perimeter(&self) -> f64 {
-        match self {
-            Shape::Circle(c) => c.perimeter(),
-            Shape::Polygon(p) => p.perimeter(),
-        }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn round_two_digits(x: f64) -> f64 {
-        (x * 100.0).round() / 100.0
-    }
-
-    #[test]
-    fn test_point_magnitude() {
-        let p1 = Point::new(12, 13);
-        assert_eq!(round_two_digits(p1.magnitude()), 17.69);
-    }
-
-    #[test]
-    fn test_point_dist() {
-        let p1 = Point::new(10, 10);
-        let p2 = Point::new(14, 13);
-        assert_eq!(round_two_digits(p1.dist(p2)), 5.00);
-    }
-
-    #[test]
-    fn test_point_add() {
-        let p1 = Point::new(16, 16);
-        let p2 = p1 + Point::new(-4, 3);
-        assert_eq!(p2, Point::new(12, 19));
-    }
-
-    #[test]
-    fn test_polygon_left_most_point() {
-        let p1 = Point::new(12, 13);
-        let p2 = Point::new(16, 16);
-
-        let mut poly = Polygon::new();
-        poly.add_point(p1);
-        poly.add_point(p2);
-        assert_eq!(poly.left_most_point(), Some(p1));
-    }
-
-    #[test]
-    fn test_polygon_iter() {
-        let p1 = Point::new(12, 13);
-        let p2 = Point::new(16, 16);
-
-        let mut poly = Polygon::new();
-        poly.add_point(p1);
-        poly.add_point(p2);
-
-        let points = poly.iter().cloned().collect::<Vec<_>>();
-        assert_eq!(points, vec![Point::new(12, 13), Point::new(16, 16)]);
-    }
-
-    #[test]
-    fn test_shape_perimeters() {
-        let mut poly = Polygon::new();
-        poly.add_point(Point::new(12, 13));
-        poly.add_point(Point::new(17, 11));
-        poly.add_point(Point::new(16, 16));
-        let shapes = vec![
-            Shape::from(poly),
-            Shape::from(Circle::new(Point::new(10, 20), 5)),
-        ];
-        let perimeters = shapes
-            .iter()
-            .map(Shape::perimeter)
-            .map(round_two_digits)
-            .collect::<Vec<_>>();
-        assert_eq!(perimeters, vec![15.48, 31.42]);
-    }
+#[test]
+fn test_invalid_cc_number() {
+    assert!(!luhn("4223 9826 4026 9299"));
+    assert!(!luhn("4539 3195 0343 6476"));
+    assert!(!luhn("8273 1232 7352 0569"));
 }
 
 #[allow(dead_code)]
