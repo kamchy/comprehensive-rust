@@ -1,67 +1,107 @@
-// TODO: remove this when you're done with your implementation.
-#![allow(unused_variables, dead_code)]
-
-fn digits(idx: usize, c: char) -> Vec<i32> {
-    let dig: i32 = c.to_digit(10).unwrap_or(0).try_into().unwrap_or(0); // no error checking
-
-    if idx % 2 != 0 {
-        let r = dig * 2 % 10;
-        let l = (dig * 2 - r) / 10;
-        vec![l, r]
-    } else {
-        vec![dig]
+pub fn prefix_matches(prefix: &str, request_path: &str) -> bool {
+    println!("chekcing: prefix={} request={}", prefix, request_path);
+    if prefix == "" {
+        return true;
     }
-}
-pub fn luhn(cc_number: &str) -> bool {
-    let ccn = cc_number.replace(" ", "");
-    if ccn.len() < 2 || !ccn.chars().all(|c| c.is_numeric()) {
+    if request_path.len() < prefix.len() {
         return false;
     }
-    ccn.chars()
-        .rev()
-        .enumerate()
-        .flat_map(|(idx, c)| digits(idx, c))
-        .sum::<i32>()
-        % 10
-        == 0
+
+    if let Some(idx) = prefix.find("*") {
+        println!("found {:?} at {}", prefix, idx);
+        if request_path[..idx] != prefix[..idx] {
+            return false;
+        }
+        let (_, after) = request_path.split_at(idx);
+        if let Some(slashidx) = after.find("/") {
+            println!(
+                "request after split is {:} and it has slash at {}",
+                after, slashidx
+            );
+            return prefix_matches(&prefix[idx + 1..], &after[slashidx..]);
+        } else {
+            return true;
+        }
+    } else {
+        if prefix == request_path {
+            return true;
+        }
+        let res = request_path.find(prefix);
+        println!(
+            "Checking if {} contains prefix {}: {:?}",
+            request_path, prefix, res,
+        );
+        match res {
+            Some(_) => {
+                request_path
+                    .chars()
+                    .skip(prefix.len())
+                    .next()
+                    .unwrap_or('.')
+                    == '/'
+            }
+            None => false,
+        }
+    }
+}
+
+fn main() {
+    println!(
+        "{:}",
+        prefix_matches("/my/*/house", "/my/goo/house/in/play"),
+    );
 }
 
 #[test]
-fn test_non_digit_cc_number() {
-    assert!(!luhn("foo"));
+fn test_matches_without_wildcard_same() {
+    assert!(prefix_matches("/v1/publishers", "/v1/publishers"));
+}
+#[test]
+fn test_matches_without_wildcard_123() {
+    assert!(prefix_matches("/v1/publishers", "/v1/publishers/abc-123"));
+}
+#[test]
+fn test_matches_without_wildcard_ok() {
+    assert!(prefix_matches("/v1/publishers", "/v1/publishers/abc/books"));
 }
 
 #[test]
-fn test_empty_cc_number() {
-    assert!(!luhn(""));
-    assert!(!luhn(" "));
-    assert!(!luhn("  "));
-    assert!(!luhn("    "));
+fn test_matches_without_wildcard_v1() {
+    assert!(!prefix_matches("/v1/publishers", "/v1"));
+}
+#[test]
+fn test_matches_without_wildcard_noslash() {
+    assert!(!prefix_matches("/v1/publishers", "/v1/publishersBooks"));
+}
+#[test]
+fn test_matches_without_wildcard_invalid() {
+    assert!(!prefix_matches("/v1/publishers", "/v1/parent/publishers"));
 }
 
 #[test]
-fn test_single_digit_cc_number() {
-    assert!(!luhn("0"));
+fn test_matches_with_wildcard() {
+    assert!(prefix_matches(
+        "/v1/publishers/*/books",
+        "/v1/publishers/foo/books"
+    ));
+    assert!(prefix_matches(
+        "/v1/publishers/*/books",
+        "/v1/publishers/bar/books"
+    ));
+    assert!(prefix_matches(
+        "/v1/publishers/*/books",
+        "/v1/publishers/foo/books/book1"
+    ));
+
+    assert!(!prefix_matches("/v1/publishers/*/books", "/v1/publishers"));
+    assert!(!prefix_matches(
+        "/v1/publishers/*/books",
+        "/v1/publishers/foo/booksByAuthor"
+    ));
 }
 
 #[test]
-fn test_two_digit_cc_number() {
-    assert!(luhn(" 0 0 "));
+fn request_shorter() {
+    assert!(!prefix_matches("/v1/publishers/*", "/v1/publishers/"));
+    assert!(!prefix_matches("/v1/publishers/*", "/v1/publishers"));
 }
-
-#[test]
-fn test_valid_cc_number() {
-    assert!(luhn("4263 9826 4026 9299"));
-    assert!(luhn("4539 3195 0343 6467"));
-    assert!(luhn("7992 7398 713"));
-}
-
-#[test]
-fn test_invalid_cc_number() {
-    assert!(!luhn("4223 9826 4026 9299"));
-    assert!(!luhn("4539 3195 0343 6476"));
-    assert!(!luhn("8273 1232 7352 0569"));
-}
-
-#[allow(dead_code)]
-fn main() {}
